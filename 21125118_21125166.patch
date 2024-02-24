@@ -1,0 +1,499 @@
+diff --git a/.gitignore b/.gitignore
+index 5c33438..b49f865 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -23,3 +23,4 @@ ph
+ barrier
+ /lab-*.json
+ .DS_Store
++.vscode
+\ No newline at end of file
+diff --git a/Makefile b/Makefile
+index 365c91b..4ce5410 100644
+--- a/Makefile
++++ b/Makefile
+@@ -174,6 +174,7 @@ mkfs/mkfs: mkfs/mkfs.c $K/fs.h $K/param.h
+ UPROGS=\
+ 	$U/_cat\
+ 	$U/_echo\
++	$U/_find\
+ 	$U/_forktest\
+ 	$U/_grep\
+ 	$U/_init\
+@@ -181,12 +182,16 @@ UPROGS=\
+ 	$U/_ln\
+ 	$U/_ls\
+ 	$U/_mkdir\
++	$U/_pingpong\
++	$U/_primes\
+ 	$U/_rm\
+ 	$U/_sh\
++	$U/_sleep\
+ 	$U/_stressfs\
+ 	$U/_usertests\
+ 	$U/_grind\
+ 	$U/_wc\
++	$U/_xargs\
+ 	$U/_zombie\
+ 
+ 
+diff --git a/README b/README
+index ed8bba5..eed50ee 100644
+--- a/README
++++ b/README
+@@ -1,49 +1,14 @@
+-xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix
+-Version 6 (v6).  xv6 loosely follows the structure and style of v6,
+-but is implemented for a modern RISC-V multiprocessor using ANSI C.
++PLEASE READ!!!!
++THIS REPO IS MY ATTEMPT TO PERFORM MY LAB ASSIGNMENTS IN OS CLASS. I HAVE TO USE GITHUB BECAUSE IT WAS A GROUP ASSIGNMENT, WHICH IS NOT AS THE ORIGINAL EXCERCISE INTENDED (TO BE PERFORMED BY ONE PERSON). I DID NOT KNOW A BOUT GIT'S "FORK" HENCE I CLONED
++THE ORIGINAL REPO AND CREATED A NEW ONE SO MY TEAMATE AND I CAN COLLABORATE. THEREFORE, THIS IS NOT MY WORK (APART FROM THOSE EDITED BRANCHES AND FILES WHICH ARE MY SOLUTIONS), PLEASE REFER TO THE ORIGINAL REPO VIA:
++```
++$ git clone git://g.csail.mit.edu/xv6-labs-2023
++```
+ 
+-ACKNOWLEDGMENTS
++AGAIN, THE XV6 SYSTEM HERE IS NOT MY WORK, I ONLY ADDED SOLUTIONS TO MY OWN ASSIGNMENTS. THIS REPO IS MERELY USED FOR EDUCATIONAL PURPOSE, NO COMMMERCIAL PURPOSE IS INTENDED OR CARRIED OUT. IF YOU ARE THE AUTHOR OR ANY PRIVILEDGED ADMINISTRATOR AND WISH THIS REPO
++TO BE TAKEN DOWN, PLEASE CONTACT ME AND I WILL DELETE IT IMMEDIATLY.
+ 
+-xv6 is inspired by John Lions's Commentary on UNIX 6th Edition (Peer
+-to Peer Communications; ISBN: 1-57398-013-7; 1st edition (June 14,
+-2000)).  See also https://pdos.csail.mit.edu/6.1810/, which provides
+-pointers to on-line resources for v6.
++THANK YOU FOR YOUR UNDESTANDING.
+ 
+-The following people have made contributions: Russ Cox (context switching,
+-locking), Cliff Frey (MP), Xiao Yu (MP), Nickolai Zeldovich, and Austin
+-Clements.
++MINH.
+ 
+-We are also grateful for the bug reports and patches contributed by
+-Takahiro Aoyagi, Silas Boyd-Wickizer, Anton Burtsev, carlclone, Ian
+-Chen, Dan Cross, Cody Cutler, Mike CAT, Tej Chajed, Asami Doi,
+-eyalz800, Nelson Elhage, Saar Ettinger, Alice Ferrazzi, Nathaniel
+-Filardo, flespark, Peter Froehlich, Yakir Goaron, Shivam Handa, Matt
+-Harvey, Bryan Henry, jaichenhengjie, Jim Huang, Matúš Jókay, John
+-Jolly, Alexander Kapshuk, Anders Kaseorg, kehao95, Wolfgang Keller,
+-Jungwoo Kim, Jonathan Kimmitt, Eddie Kohler, Vadim Kolontsov, Austin
+-Liew, l0stman, Pavan Maddamsetti, Imbar Marinescu, Yandong Mao, Matan
+-Shabtay, Hitoshi Mitake, Carmi Merimovich, Mark Morrissey, mtasm, Joel
+-Nider, Hayato Ohhashi, OptimisticSide, Harry Porter, Greg Price, Jude
+-Rich, segfault, Ayan Shafqat, Eldar Sehayek, Yongming Shen, Fumiya
+-Shigemitsu, Cam Tenny, tyfkda, Warren Toomey, Stephen Tu, Rafael Ubal,
+-Amane Uehara, Pablo Ventura, Xi Wang, WaheedHafez, Keiichi Watanabe,
+-Nicolas Wolovick, wxdao, Grant Wu, Jindong Zhang, Icenowy Zheng,
+-ZhUyU1997, and Zou Chang Wei.
+-
+-
+-The code in the files that constitute xv6 is
+-Copyright 2006-2022 Frans Kaashoek, Robert Morris, and Russ Cox.
+-
+-ERROR REPORTS
+-
+-Please send errors and suggestions to Frans Kaashoek and Robert Morris
+-(kaashoek,rtm@mit.edu).  The main purpose of xv6 is as a teaching
+-operating system for MIT's 6.1810, so we are more interested in
+-simplifications and clarifications than new features.
+-
+-BUILDING AND RUNNING XV6
+-
+-You will need a RISC-V "newlib" tool chain from
+-https://github.com/riscv/riscv-gnu-toolchain, and qemu compiled for
+-riscv64-softmmu.  Once they are installed, and in your shell
+-search path, you can run "make qemu".
+diff --git a/time.txt b/time.txt
+new file mode 100644
+index 0000000..ea70ce0
+--- /dev/null
++++ b/time.txt
+@@ -0,0 +1 @@
++72
+diff --git a/user/find.c b/user/find.c
+new file mode 100644
+index 0000000..c10ea56
+--- /dev/null
++++ b/user/find.c
+@@ -0,0 +1,102 @@
++#include "kernel/types.h"
++#include "kernel/stat.h"
++#include "user/user.h"
++#include "kernel/fs.h"
++#include "kernel/fcntl.h"
++
++char* target;
++
++char*
++fmtname(char *path)
++{
++  static char buf[DIRSIZ+1];
++  char *p;
++
++  // Find first character after last slash.
++  for(p=path+strlen(path); p >= path && *p != '/'; p--)
++    ;
++  p++;
++
++  // Return blank-padded name.
++  if(strlen(p) >= DIRSIZ)
++    return p;
++  memset(buf, 0, sizeof(buf));
++  memmove(buf, p, strlen(p));
++//   memset(buf+strlen(p), ' ', DIRSIZ-strlen(p));
++  return buf;
++}
++
++void
++find_dir(char *path)
++{
++  char buf[512], *p;
++  int fd;
++  struct dirent de;
++  struct stat st;
++
++  if((fd = open(path, O_RDONLY)) < 0){
++    fprintf(2, "find: cannot open %s\n", path);
++    return;
++  }
++
++  if(fstat(fd, &st) < 0){
++    fprintf(2, "find: cannot stat %s\n", path);
++    close(fd);
++    return;
++  }
++
++  switch(st.type){
++  case T_FILE:
++    // printf("%s %d %d %l\n", fmtname(path), st.type, st.ino, st.size);
++    fprintf(2, "find: %s not a dir\n", path);
++    return;
++
++  case T_DIR:
++    if(strlen(path) + 1 + DIRSIZ + 1 > sizeof buf){
++      printf("find: path too long\n");
++      return;
++    }
++    strcpy(buf, path);
++    p = buf+strlen(buf);
++    *p++ = '/';
++    while(read(fd, &de, sizeof(de)) == sizeof(de)){
++      if(de.inum == 0)
++        continue;
++      memmove(p, de.name, DIRSIZ);
++      p[DIRSIZ] = 0;
++      if(stat(buf, &st) < 0){
++        printf("find: cannot stat %s\n", buf);
++        continue;
++      }
++    //   printf("%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
++      if (st.type == T_FILE) {
++        if (strcmp(fmtname(buf), target) == 0) {
++          printf("%s\n", buf);
++        } 
++      } else if (st.type == T_DIR) {
++        if (strcmp(de.name, ".") == 0 || strcmp(de.name, "..") == 0)
++          continue;
++        find_dir(buf);
++      }
++    }
++    break;
++  }
++  close(fd);
++}
++
++int
++main(int argc, char *argv[])
++{
++  if (argc < 2 || argc > 3) {
++    fprintf(2, "Usage: find (path) [file]\n");
++    exit(1);
++  } else if (argc < 3) {
++    target = argv[1];
++    find_dir(".");
++  } else {
++    target = argv[2];
++    find_dir(argv[1]);
++  }
++
++  exit(0);
++}
+diff --git a/user/pingpong.c b/user/pingpong.c
+new file mode 100644
+index 0000000..f835f8f
+--- /dev/null
++++ b/user/pingpong.c
+@@ -0,0 +1,38 @@
++#include "kernel/types.h"
++#include "kernel/stat.h"
++#include "user/user.h"
++
++int
++main(int argc, char *argv[])
++{
++  if (argc > 1) {
++    fprintf(2, "Usage: pingpong\n");
++    exit(1);
++  }
++
++  int p[2];
++  char buf[4];
++
++  pipe(p);
++
++  int pid = fork();
++  if (pid == 0) {
++    if (read(p[0], buf, 4)){
++      fprintf(1, "%d: received %s\n", getpid(), buf);
++    }
++    write(p[1], "pong", 4);
++    exit(0);
++  } else if (pid > 0) {
++    write(p[1], "ping", 4);
++    wait(0);
++    if (read(p[0], buf, 4)){
++      fprintf(1, "%d: received %s\n", getpid(), buf);
++    }
++    close(p[0]);
++    close(p[1]);
++    exit(0);
++  } else {
++    fprintf(2, "Error: fork error\n");
++    exit(1);
++  }
++}
+diff --git a/user/primes.c b/user/primes.c
+new file mode 100644
+index 0000000..e1952bf
+--- /dev/null
++++ b/user/primes.c
+@@ -0,0 +1,130 @@
++// Phuc --version
++#include "kernel/types.h"
++#include "user/user.h"
++
++void
++seive(int pipe_in[])
++{
++  int n, buf, pipe_out[2];
++  close(pipe_in[1]);
++
++  pipe(pipe_out);
++
++  if (read(pipe_in[0], &n, sizeof(int)) > 0) {
++    printf("prime %d\n", n);
++
++    if (fork() == 0) {
++      seive(pipe_out);
++      exit(0);
++    } else {
++      close(pipe_out[0]);
++      while (read(pipe_in[0], &buf, sizeof(int)) > 0) {
++        if (buf % n != 0) {
++          write(pipe_out[1], &buf, sizeof(int));
++        }
++      }
++      close(pipe_out[1]);
++      wait(0);
++    }
++  }
++  exit(0);
++}
++
++int
++main(int argc, char *argv[])
++{
++  if (argc > 1) {
++    fprintf(2, "Usage: primes\n");
++    exit(1);
++  }
++
++  int p[2];
++  pipe(p);
++
++  if (fork() == 0) {
++    seive(p);
++    exit(0);
++  } else {
++    close(p[0]);
++    for (int i = 2; i <= 35; ++i) {
++      write(p[1], &i, sizeof(int));
++    }
++    close(p[1]);
++    wait(0);
++    close(p[0]);
++  }
++
++  exit(0);
++}
++
++/*
++// Minh --version
++#include "kernel/types.h"
++#include "user/user.h"
++
++void sieve(int source_pipe[2]) {
++    close(source_pipe[1]);
++
++    int prime;
++    int check_read = read(source_pipe[0], &prime, 4);
++    if (check_read == 0) {
++        exit(0);
++    }
++    else if (check_read != 4) {
++        fprintf(2, "Error: error reading into sieve\n");
++        exit(1);
++    }
++
++    printf("prime %d\n", prime);
++
++    int sieve_pipe[2];
++    pipe(sieve_pipe);  
++
++    int sieve_pid = fork();
++    if (sieve_pid == 0) {
++        sieve(sieve_pipe);
++    }
++    else if (sieve_pid > 0) {
++        int num;
++        while (read(source_pipe[0], &num, 4) == 4) {
++            if (num % prime != 0) {
++                write(sieve_pipe[1], &num, 4);
++            }
++        }
++        close(sieve_pipe[1]);
++    }
++    else
++    {
++        fprintf(2, "Error: error forking sieve\n");
++        exit(1);
++    }
++
++}
++
++int main() {
++    int feed_pipe[2];
++
++    pipe(feed_pipe);
++
++    int pid = fork();
++    if (pid == 0) {
++        sieve(feed_pipe);
++    }
++    else if (pid > 0) {
++        for (int i = 2; i <= 35; i++) {
++            if (write(feed_pipe[1], &i, sizeof(i)) != 4) {
++                fprintf(2, "Error: error feeding numbers\n");
++                exit(1);
++            }
++        }
++    }
++    else {
++        fprintf(2, "Error: error forking feed process\n");
++        exit(1);
++    }
++
++    close(feed_pipe[1]);
++    wait(0);
++    exit(0);
++}
++*/
+diff --git a/user/sleep.c b/user/sleep.c
+new file mode 100644
+index 0000000..26b6111
+--- /dev/null
++++ b/user/sleep.c
+@@ -0,0 +1,16 @@
++#include "kernel/types.h"
++#include "user/user.h"
++
++int
++main(int argc, char* argv[])
++{
++    if (argc != 2) // incorrect number of arguments
++    {
++        fprintf(2, "Usage: sleep ticks\n");
++        exit(1);
++    }
++
++    sleep(atoi(argv[1])); // call sleep from user.h
++
++    exit(0); // sleep success
++}
+\ No newline at end of file
+diff --git a/user/xargs.c b/user/xargs.c
+new file mode 100644
+index 0000000..597e1ec
+--- /dev/null
++++ b/user/xargs.c
+@@ -0,0 +1,71 @@
++#include "kernel/types.h"
++#include "user/user.h"
++#include "kernel/fcntl.h"
++#include "kernel/param.h"
++
++void
++copy_argv(char **ori_argv, int ori_argc, char *new_argv, char **argv)
++{
++  int k = 0;
++  for (int i = 0; i < ori_argc; i++) {
++    argv[k] = malloc(strlen(ori_argv[i]) + 1);
++    memcpy(argv[k++], ori_argv[i], strlen(ori_argv[i]) + 1);
++  }
++  argv[k] = malloc(strlen(new_argv) + 1);
++  memcpy(argv[k++], new_argv, strlen(new_argv) + 1);
++}
++
++int 
++main(int argc, char *argv[])
++{
++  if (argc <= 1) {
++    fprintf(2, "Usage: xargx command [arg ...]\n");
++    exit(1);
++  }
++
++  char buf[512];  
++  int i = 0;
++  char ch;
++  int ignore = 0;
++  while (read(0, &ch, 1) > 0) { \
++  // read a character at a time until a newline ('\n') appears.
++    if (ch == '\n') {
++      if (ignore) {
++        i = 0;
++        ignore = 0;
++        continue;
++      }
++      buf[i] = 0;
++      i = 0;
++
++      if (fork() == 0) {
++        // child
++        int cmd_argc = argc;
++        
++        char *cmd_argv[MAXARG];
++
++        copy_argv(argv + 1, argc - 1, buf, cmd_argv);
++        cmd_argv[cmd_argc] = 0;
++        
++        exec(cmd_argv[0], cmd_argv);
++
++        exit(0);
++      } else {
++        // parent
++        wait(0);
++      }
++      
++    } else {
++      if (!ignore && i >= 511) {
++        printf("xargs: too long arguments...\n");
++        ignore = 1;
++      }
++
++      if (!ignore) {
++        buf[i++] = ch;
++      }
++    }
++  }
++
++  exit(0);
++}
+\ No newline at end of file
