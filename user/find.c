@@ -9,7 +9,7 @@ char* target;
 char*
 fmtname(char *path)
 {
-  static char buf_name[DIRSIZ+1];
+  static char buf[DIRSIZ+1];
   char *p;
 
   // Find first character after last slash.
@@ -20,10 +20,10 @@ fmtname(char *path)
   // Return blank-padded name.
   if(strlen(p) >= DIRSIZ)
     return p;
-  memset(buf_name, 0, sizeof(buf_name));
-  memmove(buf_name, p, strlen(p));
-//   memset(buf_name+strlen(p), ' ', DIRSIZ-strlen(p));
-  return buf_name;
+  memset(buf, 0, sizeof(buf));
+  memmove(buf, p, strlen(p));
+//   memset(buf+strlen(p), ' ', DIRSIZ-strlen(p));
+  return buf;
 }
 
 void
