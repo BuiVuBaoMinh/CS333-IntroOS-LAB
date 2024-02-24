@@ -4,6 +4,8 @@
 #include "kernel/fs.h"
 #include "kernel/fcntl.h"
 
+char* target;
+
 char*
 fmtname(char *path)
 {
@@ -18,13 +20,14 @@ fmtname(char *path)
   // Return blank-padded name.
   if(strlen(p) >= DIRSIZ)
     return p;
+  memset(buf_name, 0, sizeof(buf_name));
   memmove(buf_name, p, strlen(p));
-  memset(buf_name+strlen(p), ' ', DIRSIZ-strlen(p));
+//   memset(buf_name+strlen(p), ' ', DIRSIZ-strlen(p));
   return buf_name;
 }
 
 void
-ls(char *path)
+find_dir(char *path)
 {
   char buf[512], *p;
   int fd;
@@ -32,26 +35,26 @@ ls(char *path)
   struct stat st;
 
   if((fd = open(path, O_RDONLY)) < 0){
-    fprintf(2, "ls: cannot open %s\n", path);
+    fprintf(2, "find: cannot open %s\n", path);
     return;
   }
 
   if(fstat(fd, &st) < 0){
-    fprintf(2, "ls: cannot stat %s\n", path);
+    fprintf(2, "find: cannot stat %s\n", path);
     close(fd);
     return;
   }
 
   switch(st.type){
-  case T_DEVICE:
   case T_FILE:
-    printf("%s %d %d %l\n", fmtname(path), st.type, st.ino, st.size);
-    break;
+    // printf("%s %d %d %l\n", fmtname(path), st.type, st.ino, st.size);
+    fprintf(2, "find: %s not a dir\n", path);
+    return;
 
   case T_DIR:
     if(strlen(path) + 1 + DIRSIZ + 1 > sizeof buf){
-      printf("ls: path too long\n");
-      break;
+      printf("find: path too long\n");
+      return;
     }
     strcpy(buf, path);
     p = buf+strlen(buf);
@@ -62,10 +65,19 @@ ls(char *path)
       memmove(p, de.name, DIRSIZ);
       p[DIRSIZ] = 0;
       if(stat(buf, &st) < 0){
-        printf("ls: cannot stat %s\n", buf);
+        printf("find: cannot stat %s\n", buf);
         continue;
       }
-      printf("%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
+    //   printf("%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
+      if (st.type == T_FILE) {
+        if (strcmp(fmtname(buf), target) == 0) {
+          printf("%s\n", buf);
+        } 
+      } else if (st.type == T_DIR) {
+        if (strcmp(de.name, ".") == 0 || strcmp(de.name, "..") == 0)
+          continue;
+        find_dir(buf);
+      }
     }
     break;
   }
@@ -75,13 +87,16 @@ ls(char *path)
 int
 main(int argc, char *argv[])
 {
-  int i;
-
-  if(argc < 2){
-    ls(".");
-    exit(0);
+  if (argc < 2 || argc > 3) {
+    fprintf(2, "Usage: find (path) [file]\n");
+    exit(1);
+  } else if (argc < 3) {
+    target = argv[1];
+    find_dir(".");
+  } else {
+    target = argv[2];
+    find_dir(argv[1]);
   }
-  for(i=1; i<argc; i++)
-    ls(argv[i]);
+
   exit(0);
 }
