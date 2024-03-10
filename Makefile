@@ -194,7 +194,7 @@ UPROGS=\
 	$U/_wc\
 	$U/_xargs\
 	$U/_zombie\
-	$U/_sysinfotest
+	$U/_sysinfotest\
 
 
 
