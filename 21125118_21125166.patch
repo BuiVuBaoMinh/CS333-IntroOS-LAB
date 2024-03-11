@@ -1,499 +1,587 @@
-diff --git a/.gitignore b/.gitignore
-index 5c33438..b49f865 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -23,3 +23,4 @@ ph
- barrier
- /lab-*.json
- .DS_Store
-+.vscode
-\ No newline at end of file
 diff --git a/Makefile b/Makefile
-index 365c91b..4ce5410 100644
+index 4ce5410..fab2ddb 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -174,6 +174,7 @@ mkfs/mkfs: mkfs/mkfs.c $K/fs.h $K/param.h
- UPROGS=\
- 	$U/_cat\
- 	$U/_echo\
-+	$U/_find\
- 	$U/_forktest\
- 	$U/_grep\
- 	$U/_init\
-@@ -181,12 +182,16 @@ UPROGS=\
- 	$U/_ln\
- 	$U/_ls\
- 	$U/_mkdir\
-+	$U/_pingpong\
-+	$U/_primes\
- 	$U/_rm\
+@@ -188,11 +188,13 @@ UPROGS=\
  	$U/_sh\
-+	$U/_sleep\
+ 	$U/_sleep\
  	$U/_stressfs\
++	$U/_trace\
  	$U/_usertests\
  	$U/_grind\
  	$U/_wc\
-+	$U/_xargs\
+ 	$U/_xargs\
  	$U/_zombie\
++	$U/_sysinfotest\
  
  
-diff --git a/README b/README
-index ed8bba5..eed50ee 100644
---- a/README
-+++ b/README
-@@ -1,49 +1,14 @@
--xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix
--Version 6 (v6).  xv6 loosely follows the structure and style of v6,
--but is implemented for a modern RISC-V multiprocessor using ANSI C.
-+PLEASE READ!!!!
-+THIS REPO IS MY ATTEMPT TO PERFORM MY LAB ASSIGNMENTS IN OS CLASS. I HAVE TO USE GITHUB BECAUSE IT WAS A GROUP ASSIGNMENT, WHICH IS NOT AS THE ORIGINAL EXCERCISE INTENDED (TO BE PERFORMED BY ONE PERSON). I DID NOT KNOW A BOUT GIT'S "FORK" HENCE I CLONED
-+THE ORIGINAL REPO AND CREATED A NEW ONE SO MY TEAMATE AND I CAN COLLABORATE. THEREFORE, THIS IS NOT MY WORK (APART FROM THOSE EDITED BRANCHES AND FILES WHICH ARE MY SOLUTIONS), PLEASE REFER TO THE ORIGINAL REPO VIA:
-+```
-+$ git clone git://g.csail.mit.edu/xv6-labs-2023
-+```
  
--ACKNOWLEDGMENTS
-+AGAIN, THE XV6 SYSTEM HERE IS NOT MY WORK, I ONLY ADDED SOLUTIONS TO MY OWN ASSIGNMENTS. THIS REPO IS MERELY USED FOR EDUCATIONAL PURPOSE, NO COMMMERCIAL PURPOSE IS INTENDED OR CARRIED OUT. IF YOU ARE THE AUTHOR OR ANY PRIVILEDGED ADMINISTRATOR AND WISH THIS REPO
-+TO BE TAKEN DOWN, PLEASE CONTACT ME AND I WILL DELETE IT IMMEDIATLY.
- 
--xv6 is inspired by John Lions's Commentary on UNIX 6th Edition (Peer
--to Peer Communications; ISBN: 1-57398-013-7; 1st edition (June 14,
--2000)).  See also https://pdos.csail.mit.edu/6.1810/, which provides
--pointers to on-line resources for v6.
-+THANK YOU FOR YOUR UNDESTANDING.
- 
--The following people have made contributions: Russ Cox (context switching,
--locking), Cliff Frey (MP), Xiao Yu (MP), Nickolai Zeldovich, and Austin
--Clements.
-+MINH.
- 
--We are also grateful for the bug reports and patches contributed by
--Takahiro Aoyagi, Silas Boyd-Wickizer, Anton Burtsev, carlclone, Ian
--Chen, Dan Cross, Cody Cutler, Mike CAT, Tej Chajed, Asami Doi,
--eyalz800, Nelson Elhage, Saar Ettinger, Alice Ferrazzi, Nathaniel
--Filardo, flespark, Peter Froehlich, Yakir Goaron, Shivam Handa, Matt
--Harvey, Bryan Henry, jaichenhengjie, Jim Huang, Matúš Jókay, John
--Jolly, Alexander Kapshuk, Anders Kaseorg, kehao95, Wolfgang Keller,
--Jungwoo Kim, Jonathan Kimmitt, Eddie Kohler, Vadim Kolontsov, Austin
--Liew, l0stman, Pavan Maddamsetti, Imbar Marinescu, Yandong Mao, Matan
--Shabtay, Hitoshi Mitake, Carmi Merimovich, Mark Morrissey, mtasm, Joel
--Nider, Hayato Ohhashi, OptimisticSide, Harry Porter, Greg Price, Jude
--Rich, segfault, Ayan Shafqat, Eldar Sehayek, Yongming Shen, Fumiya
--Shigemitsu, Cam Tenny, tyfkda, Warren Toomey, Stephen Tu, Rafael Ubal,
--Amane Uehara, Pablo Ventura, Xi Wang, WaheedHafez, Keiichi Watanabe,
--Nicolas Wolovick, wxdao, Grant Wu, Jindong Zhang, Icenowy Zheng,
--ZhUyU1997, and Zou Chang Wei.
--
--
--The code in the files that constitute xv6 is
--Copyright 2006-2022 Frans Kaashoek, Robert Morris, and Russ Cox.
--
--ERROR REPORTS
--
--Please send errors and suggestions to Frans Kaashoek and Robert Morris
--(kaashoek,rtm@mit.edu).  The main purpose of xv6 is as a teaching
--operating system for MIT's 6.1810, so we are more interested in
--simplifications and clarifications than new features.
--
--BUILDING AND RUNNING XV6
--
--You will need a RISC-V "newlib" tool chain from
--https://github.com/riscv/riscv-gnu-toolchain, and qemu compiled for
--riscv64-softmmu.  Once they are installed, and in your shell
--search path, you can run "make qemu".
-diff --git a/time.txt b/time.txt
+diff --git a/answers-syscall.txt b/answers-syscall.txt
 new file mode 100644
-index 0000000..ea70ce0
+index 0000000..4050ffc
 --- /dev/null
-+++ b/time.txt
-@@ -0,0 +1 @@
-+72
-diff --git a/user/find.c b/user/find.c
-new file mode 100644
-index 0000000..c10ea56
---- /dev/null
-+++ b/user/find.c
-@@ -0,0 +1,102 @@
-+#include "kernel/types.h"
-+#include "kernel/stat.h"
-+#include "user/user.h"
-+#include "kernel/fs.h"
-+#include "kernel/fcntl.h"
++++ b/answers-syscall.txt
+@@ -0,0 +1,94 @@
++1.  (gdb) backtrace 
++    #0  syscall () at kernel/syscall.c:133
++    #1  0x0000000080001d70 in usertrap () at kernel/trap.c:67
++    #2  0x0505050505050505 in ?? ()
++    (gdb) 
 +
-+char* target;
++- Answer: Looking at the backtrace output, usertrap() function called syscall() function.
 +
-+char*
-+fmtname(char *path)
-+{
-+  static char buf[DIRSIZ+1];
-+  char *p;
 +
-+  // Find first character after last slash.
-+  for(p=path+strlen(path); p >= path && *p != '/'; p--)
-+    ;
-+  p++;
++2.  (gdb) p p->trapframe->a7
++    $2 = 7
++    (gdb)  
 +
-+  // Return blank-padded name.
-+  if(strlen(p) >= DIRSIZ)
-+    return p;
-+  memset(buf, 0, sizeof(buf));
-+  memmove(buf, p, strlen(p));
-+//   memset(buf+strlen(p), ' ', DIRSIZ-strlen(p));
-+  return buf;
-+}
++- The value of a7 is 7. According to the code in user/initcode.S, this a7 register stores the system call number to be executed. 
++The system call number here is 7, which can be found in kernel/syscall.h. This system call is SYS_exec.
++- Answer: The value of p->trapframe->a7 is 7. This value represent the system call number to be executed, which is SYS_exec.
 +
-+void
-+find_dir(char *path)
-+{
-+  char buf[512], *p;
-+  int fd;
-+  struct dirent de;
-+  struct stat st;
 +
-+  if((fd = open(path, O_RDONLY)) < 0){
-+    fprintf(2, "find: cannot open %s\n", path);
-+    return;
-+  }
++3.  (gdb) p /x $sstatus
++    $3 = 0x22
++    (gdb) 
 +
-+  if(fstat(fd, &st) < 0){
-+    fprintf(2, "find: cannot stat %s\n", path);
-+    close(fd);
-+    return;
-+  }
++- The SPP bit indicates the privilege level at which a hart was executing before entering supervisor mode. 
++When a trap is taken, SPP is set to 0 if the trap originated from user mode, or 1 otherwise. 
++When an SRET instruction (see Section 3.3.2) is executed to return from the trap handler, 
++the privilege level is set to user mode if the SPP bit is 0, or supervisor mode if the SPP bit is 1; SPP is then set to 0.   
++- According to the binary value of sstatus 0x22=100010, it can be seen that the SPP bit is 0, 
++so the privilege level before executing the system call and trapping in the kernel is user mode.
++- Answer: The previous mode that the CPU was in was user mode.
 +
-+  switch(st.type){
-+  case T_FILE:
-+    // printf("%s %d %d %l\n", fmtname(path), st.type, st.ino, st.size);
-+    fprintf(2, "find: %s not a dir\n", path);
-+    return;
 +
-+  case T_DIR:
-+    if(strlen(path) + 1 + DIRSIZ + 1 > sizeof buf){
-+      printf("find: path too long\n");
-+      return;
-+    }
-+    strcpy(buf, path);
-+    p = buf+strlen(buf);
-+    *p++ = '/';
-+    while(read(fd, &de, sizeof(de)) == sizeof(de)){
-+      if(de.inum == 0)
-+        continue;
-+      memmove(p, de.name, DIRSIZ);
-+      p[DIRSIZ] = 0;
-+      if(stat(buf, &st) < 0){
-+        printf("find: cannot stat %s\n", buf);
-+        continue;
-+      }
-+    //   printf("%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
-+      if (st.type == T_FILE) {
-+        if (strcmp(fmtname(buf), target) == 0) {
-+          printf("%s\n", buf);
-+        } 
-+      } else if (st.type == T_DIR) {
-+        if (strcmp(de.name, ".") == 0 || strcmp(de.name, "..") == 0)
-+          continue;
-+        find_dir(buf);
-+      }
-+    }
-+    break;
-+  }
-+  close(fd);
-+}
++4.  scause 0x000000000000000d
++    sepc=0x0000000080002050 stval=0x0000000000000000
++    panic: kerneltrap
 +
-+int
-+main(int argc, char *argv[])
-+{
-+  if (argc < 2 || argc > 3) {
-+    fprintf(2, "Usage: find (path) [file]\n");
-+    exit(1);
-+  } else if (argc < 3) {
-+    target = argv[1];
-+    find_dir(".");
-+  } else {
-+    target = argv[2];
-+    find_dir(argv[1]);
-+  }
++- In this case, sepc=0x0000000080002050, so I will search for 80002050 in kernel/kernel.asm
 +
-+  exit(0);
-+}
-diff --git a/user/pingpong.c b/user/pingpong.c
-new file mode 100644
-index 0000000..f835f8f
---- /dev/null
-+++ b/user/pingpong.c
-@@ -0,0 +1,38 @@
-+#include "kernel/types.h"
-+#include "kernel/stat.h"
-+#include "user/user.h"
++    num = * (int *) 0;
++    80002050:	00002683          	lw	a3,0(zero) # 0 <_entry-0x80000000>
 +
-+int
-+main(int argc, char *argv[])
-+{
-+  if (argc > 1) {
-+    fprintf(2, "Usage: pingpong\n");
-+    exit(1);
-+  }
++- As you can see, it turns out that num = * (int *) 0; causes the kernel to panic. 
++The corresponding assembly is lw a3,0(zero), which means "load a word(2 byte) from memory address (zero + 0) into register a3"
++- Answer: The kernel is panicing at: num = * (int *) 0; or lw a3,0(zero). The register corresponds to the variable num is register a3.
 +
-+  int p[2];
-+  char buf[4];
 +
-+  pipe(p);
++5.  (gdb) b* 0x0000000080002050
++    Breakpoint 1 at 0x80002050: file kernel/syscall.c, line 138.
++    (gdb) c
++    Continuing.
++    [Switching to Thread 1.3]
 +
-+  int pid = fork();
-+  if (pid == 0) {
-+    if (read(p[0], buf, 4)){
-+      fprintf(1, "%d: received %s\n", getpid(), buf);
-+    }
-+    write(p[1], "pong", 4);
-+    exit(0);
-+  } else if (pid > 0) {
-+    write(p[1], "ping", 4);
-+    wait(0);
-+    if (read(p[0], buf, 4)){
-+      fprintf(1, "%d: received %s\n", getpid(), buf);
-+    }
-+    close(p[0]);
-+    close(p[1]);
-+    exit(0);
-+  } else {
-+    fprintf(2, "Error: fork error\n");
-+    exit(1);
-+  }
-+}
-diff --git a/user/primes.c b/user/primes.c
-new file mode 100644
-index 0000000..e1952bf
---- /dev/null
-+++ b/user/primes.c
-@@ -0,0 +1,130 @@
-+// Phuc --version
-+#include "kernel/types.h"
-+#include "user/user.h"
++    Thread 3 hit Breakpoint 1, syscall () at kernel/syscall.c:138
++    138       num = * (int *) 0;
++    (gdb) layout asm
++    (gdb) c
++    Continuing.
++    (gdb) Ctrl + C  # Keyboard Interrupted
 +
-+void
-+seive(int pipe_in[])
-+{
-+  int n, buf, pipe_out[2];
-+  close(pipe_in[1]);
++    Thread 3 received signal SIGINT, Interrupt.
++    panic (s=s@entry=0x800083c0 "kerneltrap") at kernel/printf.c:127
++    (gdb) p $scause
++    $1 = 13
 +
-+  pipe(pipe_out);
++- After entering c, a panic will occur. At this time, enter Ctrl + C to end. The scause register contains the value 13.
++To view the scause register, which indicates the cause of the kernel panic, see description of scause in RISC-V privileged instructions.
++- So 13 here represents "Load page fault". It is an error when loading data from memory address (zero + 0) to register a3. 
++So what data is at address 0? The answer can be found in Figure 3.3 of the xv6 textbook "book-riscv-rev3"
++- As you can see, address 0 in the Virtual Address on the left corresponds to Unused in the Physical Address on the right, 
++indicating that this address is not used. Meanwhile, the Kernel starts from the virtual address 0x80000000.
++- Answer: The kernel crashed due to loading an unused memory data at address 0 (Load page fault). 
++Address 0 is not mapped into kernel space (starting at 0x80000000). The exception code 13 in scause confirms the above point.
 +
-+  if (read(pipe_in[0], &n, sizeof(int)) > 0) {
-+    printf("prime %d\n", n);
 +
-+    if (fork() == 0) {
-+      seive(pipe_out);
-+      exit(0);
-+    } else {
-+      close(pipe_out[0]);
-+      while (read(pipe_in[0], &buf, sizeof(int)) > 0) {
-+        if (buf % n != 0) {
-+          write(pipe_out[1], &buf, sizeof(int));
-+        }
-+      }
-+      close(pipe_out[1]);
-+      wait(0);
-+    }
-+  }
-+  exit(0);
-+}
++6.  (gdb) b syscall
++    Breakpoint 1 at 0x8000203c: file kernel/syscall.c, line 133.
++    (gdb) c
++    Continuing.
 +
-+int
-+main(int argc, char *argv[])
-+{
-+  if (argc > 1) {
-+    fprintf(2, "Usage: primes\n");
-+    exit(1);
-+  }
++    Thread 1 hit Breakpoint 1, syscall () at kernel/syscall.c:133
++    133     {
++    (gdb) layout src
++    (gdb) n
++    (gdb) n
++    (gdb) p p->name
++    $1 = "initcode\000\000\000\000\000\000\000"
++    (gdb) p /x *p
++    $2 = {lock = {locked = 0x0, name = 0x800081b8, cpu = 0x0}, state = 0x4, chan = 0x0, killed = 0x0, xstate = 0x0, pid = 0x1, parent = 0x0,
++        kstack = 0x3fffffd000, sz = 0x1000, pagetable = 0x87f73000, trapframe = 0x87f74000, context = {ra = 0x800014c2, sp = 0x3fffffde80, s0 = 0x3fffffdeb0,
++        s1 = 0x80008d70, s2 = 0x80008940, s3 = 0x1, s4 = 0x0, s5 = 0x3, s6 = 0x80019a10, s7 = 0x8, s8 = 0x80019b38, s9 = 0x4, s10 = 0x1, s11 = 0x0}, ofile = {
++        0x0 <repeats 16 times>}, cwd = 0x80016e80, name = {0x69, 0x6e, 0x69, 0x74, 0x63, 0x6f, 0x64, 0x65, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}}
 +
-+  int p[2];
-+  pipe(p);
++- As you can see, this user program is initcode. Using "p /x *p" to print the proc structure to view other information about this process.
++- As you can see, the pid of this initcode is 1.
++- Answer: The name of the binary that was running is initcode. Its process id is pid=1
+diff --git a/kernel/defs.h b/kernel/defs.h
+index a3c962b..15ca875 100644
+--- a/kernel/defs.h
++++ b/kernel/defs.h
+@@ -8,6 +8,7 @@ struct spinlock;
+ struct sleeplock;
+ struct stat;
+ struct superblock;
++struct sysinfo;
+ 
+ // bio.c
+ void            binit(void);
+@@ -63,6 +64,7 @@ void            ramdiskrw(struct buf*);
+ void*           kalloc(void);
+ void            kfree(void *);
+ void            kinit(void);
++uint64          get_free_mem(void);
+ 
+ // log.c
+ void            initlog(int, struct superblock*);
+@@ -106,6 +108,7 @@ void            yield(void);
+ int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
+ int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
+ void            procdump(void);
++uint64          get_n_active_proc(void);
+ 
+ // swtch.S
+ void            swtch(struct context*, struct context*);
+@@ -187,3 +190,4 @@ void            virtio_disk_intr(void);
+ 
+ // number of elements in fixed-size array
+ #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
 +
-+  if (fork() == 0) {
-+    seive(p);
-+    exit(0);
-+  } else {
-+    close(p[0]);
-+    for (int i = 2; i <= 35; ++i) {
-+      write(p[1], &i, sizeof(int));
-+    }
-+    close(p[1]);
-+    wait(0);
-+    close(p[0]);
-+  }
-+
-+  exit(0);
-+}
+diff --git a/kernel/kalloc.c b/kernel/kalloc.c
+index 0699e7e..e86dcad 100644
+--- a/kernel/kalloc.c
++++ b/kernel/kalloc.c
+@@ -80,3 +80,21 @@ kalloc(void)
+     memset((char*)r, 5, PGSIZE); // fill with junk
+   return (void*)r;
+ }
 +
 +/*
-+// Minh --version
-+#include "kernel/types.h"
-+#include "user/user.h"
-+
-+void sieve(int source_pipe[2]) {
-+    close(source_pipe[1]);
-+
-+    int prime;
-+    int check_read = read(source_pipe[0], &prime, 4);
-+    if (check_read == 0) {
-+        exit(0);
-+    }
-+    else if (check_read != 4) {
-+        fprintf(2, "Error: error reading into sieve\n");
-+        exit(1);
-+    }
-+
-+    printf("prime %d\n", prime);
-+
-+    int sieve_pipe[2];
-+    pipe(sieve_pipe);  
-+
-+    int sieve_pid = fork();
-+    if (sieve_pid == 0) {
-+        sieve(sieve_pipe);
-+    }
-+    else if (sieve_pid > 0) {
-+        int num;
-+        while (read(source_pipe[0], &num, 4) == 4) {
-+            if (num % prime != 0) {
-+                write(sieve_pipe[1], &num, 4);
-+            }
-+        }
-+        close(sieve_pipe[1]);
-+    }
-+    else
-+    {
-+        fprintf(2, "Error: error forking sieve\n");
-+        exit(1);
-+    }
-+
-+}
-+
-+int main() {
-+    int feed_pipe[2];
-+
-+    pipe(feed_pipe);
-+
-+    int pid = fork();
-+    if (pid == 0) {
-+        sieve(feed_pipe);
-+    }
-+    else if (pid > 0) {
-+        for (int i = 2; i <= 35; i++) {
-+            if (write(feed_pipe[1], &i, sizeof(i)) != 4) {
-+                fprintf(2, "Error: error feeding numbers\n");
-+                exit(1);
-+            }
-+        }
-+    }
-+    else {
-+        fprintf(2, "Error: error forking feed process\n");
-+        exit(1);
-+    }
-+
-+    close(feed_pipe[1]);
-+    wait(0);
-+    exit(0);
-+}
++Get number of free memory bytes
 +*/
-diff --git a/user/sleep.c b/user/sleep.c
-new file mode 100644
-index 0000000..26b6111
---- /dev/null
-+++ b/user/sleep.c
-@@ -0,0 +1,16 @@
-+#include "kernel/types.h"
-+#include "user/user.h"
++uint64 
++get_free_mem(void){
++  struct run *r; // run struct is just a linked list?
++  uint64 freemem=0;
++  acquire(&kmem.lock);
++  r = kmem.freelist; // Get the free proc list as run
++  while(r){
++    freemem += PGSIZE; // each process is allocated 4096-byte (:80) ?
++    r = r->next;
++  }
 +
-+int
-+main(int argc, char* argv[])
-+{
-+    if (argc != 2) // incorrect number of arguments
-+    {
-+        fprintf(2, "Usage: sleep ticks\n");
-+        exit(1);
-+    }
-+
-+    sleep(atoi(argv[1])); // call sleep from user.h
-+
-+    exit(0); // sleep success
++  release(&kmem.lock);
++  return freemem;
 +}
 \ No newline at end of file
-diff --git a/user/xargs.c b/user/xargs.c
-new file mode 100644
-index 0000000..597e1ec
---- /dev/null
-+++ b/user/xargs.c
-@@ -0,0 +1,71 @@
-+#include "kernel/types.h"
-+#include "user/user.h"
-+#include "kernel/fcntl.h"
-+#include "kernel/param.h"
+diff --git a/kernel/proc.c b/kernel/proc.c
+index 58a8a0b..394b7bb 100644
+--- a/kernel/proc.c
++++ b/kernel/proc.c
+@@ -296,6 +296,8 @@ fork(void)
+   }
+   np->sz = p->sz;
+ 
++  np->mask = p->mask; 
 +
-+void
-+copy_argv(char **ori_argv, int ori_argc, char *new_argv, char **argv)
+   // copy saved user registers.
+   *(np->trapframe) = *(p->trapframe);
+ 
+@@ -686,3 +688,23 @@ procdump(void)
+     printf("\n");
+   }
+ }
++
++/*
++Get number of processes whose states are not UNUSED.
++*/
++uint64
++get_n_active_proc(void)
 +{
-+  int k = 0;
-+  for (int i = 0; i < ori_argc; i++) {
-+    argv[k] = malloc(strlen(ori_argv[i]) + 1);
-+    memcpy(argv[k++], ori_argv[i], strlen(ori_argv[i]) + 1);
++  struct proc *proc_it; // proc iterator
++  int n_active_proc = 0;
++  for (proc_it = proc; proc_it < &proc[NPROC]; proc_it++)
++  {
++    acquire(&proc_it->lock);
++    if (proc_it->state != UNUSED)
++    {
++      n_active_proc++;
++    }
++    release(&proc_it->lock);
 +  }
-+  argv[k] = malloc(strlen(new_argv) + 1);
-+  memcpy(argv[k++], new_argv, strlen(new_argv) + 1);
++  return n_active_proc;
++}
+\ No newline at end of file
+diff --git a/kernel/proc.h b/kernel/proc.h
+index d021857..6e8947b 100644
+--- a/kernel/proc.h
++++ b/kernel/proc.h
+@@ -91,6 +91,7 @@ struct proc {
+   int killed;                  // If non-zero, have been killed
+   int xstate;                  // Exit status to be returned to parent's wait
+   int pid;                     // Process ID
++  int mask;                    // Tracing mask
+ 
+   // wait_lock must be held when using this:
+   struct proc *parent;         // Parent process
+diff --git a/kernel/syscall.c b/kernel/syscall.c
+index ed65409..867871e 100644
+--- a/kernel/syscall.c
++++ b/kernel/syscall.c
+@@ -101,6 +101,8 @@ extern uint64 sys_unlink(void);
+ extern uint64 sys_link(void);
+ extern uint64 sys_mkdir(void);
+ extern uint64 sys_close(void);
++extern uint64 sys_trace(void);
++extern uint64 sys_sysinfo(void);
+ 
+ // An array mapping syscall numbers from syscall.h
+ // to the function that handles the system call.
+@@ -126,6 +128,34 @@ static uint64 (*syscalls[])(void) = {
+ [SYS_link]    sys_link,
+ [SYS_mkdir]   sys_mkdir,
+ [SYS_close]   sys_close,
++[SYS_trace]   sys_trace,
++[SYS_sysinfo] sys_sysinfo,
++};
++
++static char *sysname[] = {
++[SYS_fork]    "fork",
++[SYS_exit]    "exit",
++[SYS_wait]    "wait",
++[SYS_pipe]    "pipe",
++[SYS_read]    "read",
++[SYS_kill]    "kill",
++[SYS_exec]    "exec",
++[SYS_fstat]   "fstat",
++[SYS_chdir]   "chdir",
++[SYS_dup]     "dup",
++[SYS_getpid]  "getpid",
++[SYS_sbrk]    "sbrk",
++[SYS_sleep]   "sleep",
++[SYS_uptime]  "uptime",
++[SYS_open]    "open",
++[SYS_write]   "write",
++[SYS_mknod]   "mknod",
++[SYS_unlink]  "unlink",
++[SYS_link]    "link",
++[SYS_mkdir]   "mkdir",
++[SYS_close]   "close",
++[SYS_trace]   "trace",
++[SYS_sysinfo] "sysinfo",
+ };
+ 
+ void
+@@ -135,10 +165,16 @@ syscall(void)
+   struct proc *p = myproc();
+ 
+   num = p->trapframe->a7;
++  // num = * (int *) 0;
+   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+     // Use num to lookup the system call function for num, call it,
+     // and store its return value in p->trapframe->a0
+     p->trapframe->a0 = syscalls[num]();
++
++    if(p->mask & (1<<num)) {
++      printf("%d: syscall %s -> %d\n", p->pid, sysname[num], p->trapframe->a0);
++    }
++
+   } else {
+     printf("%d %s: unknown sys call %d\n",
+             p->pid, p->name, num);
+diff --git a/kernel/syscall.h b/kernel/syscall.h
+index bc5f356..0dfedc7 100644
+--- a/kernel/syscall.h
++++ b/kernel/syscall.h
+@@ -20,3 +20,5 @@
+ #define SYS_link   19
+ #define SYS_mkdir  20
+ #define SYS_close  21
++#define SYS_trace  22
++#define SYS_sysinfo 23
+diff --git a/kernel/sysinfo.h b/kernel/sysinfo.h
+new file mode 100644
+index 0000000..0b0bcd9
+--- /dev/null
++++ b/kernel/sysinfo.h
+@@ -0,0 +1,4 @@
++struct sysinfo {
++  uint64 freemem;   // amount of free memory (bytes)
++  uint64 nproc;     // number of process
++};
+\ No newline at end of file
+diff --git a/kernel/sysproc.c b/kernel/sysproc.c
+index 3b4d5bd..affd5b7 100644
+--- a/kernel/sysproc.c
++++ b/kernel/sysproc.c
+@@ -5,6 +5,9 @@
+ #include "memlayout.h"
+ #include "spinlock.h"
+ #include "proc.h"
++#include "sysinfo.h"
++
++extern int get_sysinfo(uint64);
+ 
+ uint64
+ sys_exit(void)
+@@ -91,3 +94,32 @@ sys_uptime(void)
+   release(&tickslock);
+   return xticks;
+ }
++
++uint64
++sys_trace(void)
++{
++  int mask;
++
++  argint(0, &mask);
++  myproc()->mask = mask;
++
++  return 0;
 +}
 +
-+int 
-+main(int argc, char *argv[])
++uint64
++sys_sysinfo(void)
 +{
-+  if (argc <= 1) {
-+    fprintf(2, "Usage: xargx command [arg ...]\n");
++  struct sysinfo kinfo; // kernel's info
++  uint64 va; // virtual address returned to user
++  argaddr(0, &va);
++  // if (argaddr(0, &va) < 0) {
++  //       return -1;
++  // }
++  kinfo.freemem = get_free_mem();
++  kinfo.nproc = get_n_active_proc();
++  if (copyout(myproc()->pagetable, va,(char*)&kinfo,sizeof(kinfo)) < 0)
++  {
++    return -1;
++  }
++  return 0;
++}
+\ No newline at end of file
+diff --git a/user/sysinfotest.c b/user/sysinfotest.c
+new file mode 100644
+index 0000000..79c334a
+--- /dev/null
++++ b/user/sysinfotest.c
+@@ -0,0 +1,153 @@
++#include "kernel/types.h"
++#include "kernel/riscv.h"
++#include "kernel/sysinfo.h"
++#include "user/user.h"
++
++
++void
++sinfo(struct sysinfo *info) {
++  if (sysinfo(info) < 0) {
++    printf("FAIL: sysinfo failed");
++    exit(1);
++  }
++}
++
++//
++// use sbrk() to count how many free physical memory pages there are.
++//
++int
++countfree()
++{
++  uint64 sz0 = (uint64)sbrk(0);
++  struct sysinfo info;
++  int n = 0;
++
++  while(1){
++    if((uint64)sbrk(PGSIZE) == 0xffffffffffffffff){
++      break;
++    }
++    n += PGSIZE;
++  }
++  sinfo(&info);
++  if (info.freemem != 0) {
++    printf("FAIL: there is no free mem, but sysinfo.freemem=%d\n",
++      info.freemem);
++    exit(1);
++  }
++  sbrk(-((uint64)sbrk(0) - sz0));
++  return n;
++}
++
++void
++testmem() {
++  struct sysinfo info;
++  uint64 n = countfree();
++  
++  sinfo(&info);
++
++  if (info.freemem!= n) {
++    printf("FAIL: free mem %d (bytes) instead of %d\n", info.freemem, n);
++    exit(1);
++  }
++  
++  if((uint64)sbrk(PGSIZE) == 0xffffffffffffffff){
++    printf("sbrk failed");
 +    exit(1);
 +  }
 +
-+  char buf[512];  
-+  int i = 0;
-+  char ch;
-+  int ignore = 0;
-+  while (read(0, &ch, 1) > 0) { \
-+  // read a character at a time until a newline ('\n') appears.
-+    if (ch == '\n') {
-+      if (ignore) {
-+        i = 0;
-+        ignore = 0;
-+        continue;
-+      }
-+      buf[i] = 0;
-+      i = 0;
-+
-+      if (fork() == 0) {
-+        // child
-+        int cmd_argc = argc;
-+        
-+        char *cmd_argv[MAXARG];
-+
-+        copy_argv(argv + 1, argc - 1, buf, cmd_argv);
-+        cmd_argv[cmd_argc] = 0;
-+        
-+        exec(cmd_argv[0], cmd_argv);
-+
-+        exit(0);
-+      } else {
-+        // parent
-+        wait(0);
-+      }
-+      
-+    } else {
-+      if (!ignore && i >= 511) {
-+        printf("xargs: too long arguments...\n");
-+        ignore = 1;
-+      }
-+
-+      if (!ignore) {
-+        buf[i++] = ch;
-+      }
-+    }
++  sinfo(&info);
++    
++  if (info.freemem != n-PGSIZE) {
++    printf("FAIL: free mem %d (bytes) instead of %d\n", n-PGSIZE, info.freemem);
++    exit(1);
++  }
++  
++  if((uint64)sbrk(-PGSIZE) == 0xffffffffffffffff){
++    printf("sbrk failed");
++    exit(1);
 +  }
 +
++  sinfo(&info);
++    
++  if (info.freemem != n) {
++    printf("FAIL: free mem %d (bytes) instead of %d\n", n, info.freemem);
++    exit(1);
++  }
++}
++
++void
++testcall() {
++  struct sysinfo info;
++  
++  if (sysinfo(&info) < 0) {
++    printf("FAIL: sysinfo failed\n");
++    exit(1);
++  }
++
++  if (sysinfo((struct sysinfo *) 0xeaeb0b5b00002f5e) !=  0xffffffffffffffff) {
++    printf("FAIL: sysinfo succeeded with bad argument\n");
++    exit(1);
++  }
++}
++
++void testproc() {
++  struct sysinfo info;
++  uint64 nproc;
++  int status;
++  int pid;
++  
++  sinfo(&info);
++  nproc = info.nproc;
++
++  pid = fork();
++  if(pid < 0){
++    printf("sysinfotest: fork failed\n");
++    exit(1);
++  }
++  if(pid == 0){
++    sinfo(&info);
++    if(info.nproc != nproc+1) {
++      printf("sysinfotest: FAIL nproc is %d instead of %d\n", info.nproc, nproc+1);
++      exit(1);
++    }
++    exit(0);
++  }
++  wait(&status);
++  sinfo(&info);
++  if(info.nproc != nproc) {
++      printf("sysinfotest: FAIL nproc is %d instead of %d\n", info.nproc, nproc);
++      exit(1);
++  }
++}
++
++void testbad() {
++  int pid = fork();
++  int xstatus;
++  
++  if(pid < 0){
++    printf("sysinfotest: fork failed\n");
++    exit(1);
++  }
++  if(pid == 0){
++      sinfo(0x0);
++      exit(0);
++  }
++  wait(&xstatus);
++  if(xstatus == -1)  // kernel killed child?
++    exit(0);
++  else {
++    printf("sysinfotest: testbad succeeded %d\n", xstatus);
++    exit(xstatus);
++  }
++}
++
++int
++main(int argc, char *argv[])
++{
++  printf("sysinfotest: start\n");
++  testcall();
++  testmem();
++  testproc();
++  printf("sysinfotest: OK\n");
 +  exit(0);
 +}
 \ No newline at end of file
+diff --git a/user/trace.c b/user/trace.c
+new file mode 100644
+index 0000000..e74d912
+--- /dev/null
++++ b/user/trace.c
+@@ -0,0 +1,27 @@
++#include "kernel/param.h"
++#include "kernel/types.h"
++#include "kernel/stat.h"
++#include "user/user.h"
++
++int
++main(int argc, char *argv[])
++{
++  int i;
++  char *nargv[MAXARG];
++
++  if(argc < 3 || (argv[1][0] < '0' || argv[1][0] > '9')){
++    fprintf(2, "Usage: %s mask command\n", argv[0]);
++    exit(1);
++  }
++
++  if (trace(atoi(argv[1])) < 0) {
++    fprintf(2, "%s: trace failed\n", argv[0]);
++    exit(1);
++  }
++  
++  for(i = 2; i < argc && i < MAXARG; i++){
++    nargv[i-2] = argv[i];
++  }
++  exec(nargv[0], nargv);
++  exit(0);
++}
+\ No newline at end of file
+diff --git a/user/user.h b/user/user.h
+index 4d398d5..9f665fe 100644
+--- a/user/user.h
++++ b/user/user.h
+@@ -22,6 +22,10 @@ int getpid(void);
+ char* sbrk(int);
+ int sleep(int);
+ int uptime(void);
++int trace(int);
++
++struct sysinfo;
++int sysinfo(struct sysinfo *);
+ 
+ // ulib.c
+ int stat(const char*, struct stat*);
+@@ -39,3 +43,5 @@ void free(void*);
+ int atoi(const char*);
+ int memcmp(const void *, const void *, uint);
+ void *memcpy(void *, const void *, uint);
++
++
+diff --git a/user/usys.pl b/user/usys.pl
+index 01e426e..bc109fd 100755
+--- a/user/usys.pl
++++ b/user/usys.pl
+@@ -36,3 +36,5 @@ entry("getpid");
+ entry("sbrk");
+ entry("sleep");
+ entry("uptime");
++entry("trace");
++entry("sysinfo");
